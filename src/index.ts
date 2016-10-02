@@ -27,7 +27,12 @@ type ClassMetadata = {
 }
 
 export class Injector {
+    private verbose: boolean;
     private registeredClasses: {[name: string]: ClassMetadata[] } = {};
+
+    public constructor(verbose?: boolean) {
+        this.verbose = !!verbose;
+    }
 
     public register(name: string, constructor: Function) {
         this._register(false, name, constructor, false, null);
@@ -43,10 +48,9 @@ export class Injector {
 
     public async resolve(name: string): Promise<any> {
         
-        console.log("Resolving", name);
+        this.log("Resolving", name);
         let result = await this.resolveDefinition(this.retrieveClassMetadata(name)[0]);
-        
-        console.log("Resolving", name, "done");
+        this.log("Resolving", name, "done");
         return result;
     }
     
@@ -84,7 +88,6 @@ export class Injector {
         if (def.singleton && def.valueExists) {
             return def.value;
         }
-
         let dependencies = [];
         for (let it of def.dependencies) {
             dependencies.push(await this.resolve(it));
@@ -107,4 +110,11 @@ export class Injector {
 
         return result;
     }
+
+    private log(...msg: string[]) {
+        if (this.verbose) {
+            console.log(_.reduce(msg, (acc, it) => acc + it + " ", ""));
+        }        
+    }
+
 }

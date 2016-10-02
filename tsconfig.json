@@ -6,6 +6,11 @@
         "sourceMap": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "outDir": "./lib"
-    }
+        "outDir": "./lib",
+        "declarationDir": "./declarations",
+        "declaration": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ]
 }
