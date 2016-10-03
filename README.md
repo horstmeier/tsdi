@@ -82,3 +82,31 @@ injector.resolve("ILog");
 
 Singletons can be registered with "registerSingleton". The syntax is identical to "register". The system will make sure that at most 
 one instance for a singleton is created.
+
+# Metadata
+
+Sometimes it is necessary to support metadata. This can be achieved by changing the @inject token to
+
+```javascript
+@inject({name: "ILog", meta: {id: 77}})
+class Dummy {
+
+}
+```
+The class referenced by "ILog" can access the metadata using 
+
+```javascript
+import "reflect-metadata"
+@instance()
+class Log implements ILog {
+    constructor() {
+
+    }
+    @initialize
+    public init() {
+        let meta = Reflect.getMetadata(infoMetaDataKey, this);
+        let id = meta ? meta.id : 0;
+    }
+}
+```
+Unfortunately you currently can't access the metadata during constructor time.
