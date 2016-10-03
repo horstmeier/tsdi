@@ -27,11 +27,9 @@ type ClassMetadata = {
 }
 
 export class Injector {
-    private verbose: boolean;
     private registeredClasses: {[name: string]: ClassMetadata[] } = {};
 
-    public constructor(verbose?: boolean) {
-        this.verbose = !!verbose;
+    public constructor(readonly verbose?: boolean|undefined) {
     }
 
     public register(name: string, constructor: Function) {
@@ -90,7 +88,8 @@ export class Injector {
         }
         let dependencies = [];
         for (let it of def.dependencies) {
-            dependencies.push(await this.resolve(it));
+            let ds = await (it.endsWith("[]") ? this.resolveAll(it.substr(0, it.length-2).trim()) : this.resolve(it));
+            dependencies.push(ds);
         }
 
         let result = Reflect.construct(def.constructor, dependencies);
