@@ -4,9 +4,12 @@ import "reflect-metadata";
 
 const classMetadataKey = Symbol("injector-class");
 const initMetadataKey = Symbol("injector-init");
+export const infoMetadataKey = Symbol("injector-info");
 
+export type DependencyDeclaration = { name: string; meta: any };
+export type Dependency = string | DependencyDeclaration
 
-export function instance(...dependencies: string[]) {
+export function instance(...dependencies: Dependency[]) {
     return (constructor: Function) => {
         Reflect.defineMetadata(classMetadataKey, { 
             dependencies: dependencies,
@@ -44,19 +47,19 @@ export class Injector {
         this._register(true, name, null, true, value);
     }
 
-    public async resolve(name: string): Promise<any> {
+    public async resolve(name: string, meta:any = {}): Promise<any> {
         
         this.log("Resolving", name);
-        let result = await this.resolveDefinition(this.retrieveClassMetadata(name)[0]);
+        let result = await this.resolveDefinition(this.retrieveClassMetadata(name)[0], meta);
         this.log("Resolving", name, "done");
         return result;
     }
     
-    public async resolveAll(name: string): Promise<any[]> {
+    public async resolveAll(name: string, meta: any = {}): Promise<any[]> {
         let def = this.retrieveClassMetadata(name);
         let result: any[] = [];
         for (let it of def) {
-            result.push(await this.resolveDefinition(it));
+            result.push(await this.resolveDefinition(it, meta));
         }
         return result;
     }
@@ -82,17 +85,23 @@ export class Injector {
         return this.registeredClasses[name];      
     }
 
-    private async resolveDefinition(def: ClassMetadata) {
+    private async resolveDefinition(def: ClassMetadata, meta: any) {
         if (def.singleton && def.valueExists) {
             return def.value;
         }
         let dependencies = [];
         for (let it of def.dependencies) {
-            let ds = await (it.endsWith("[]") ? this.resolveAll(it.substr(0, it.length-2).trim()) : this.resolve(it));
+            let dependency: Dependency = it;
+            let declaration = (typeof dependency === "string") ? {name: it, meta: {}} : dependency;
+            let ds = await (declaration.name.endsWith("[]") ? 
+                this.resolveAll(declaration.name.substr(0, it.length-2).trim(), declaration.meta) 
+                : this.resolve(declaration.name, declaration.meta));
             dependencies.push(ds);
         }
 
         let result = Reflect.construct(def.constructor, dependencies);
+console.log(`Setting ${JSON.stringify(meta)} to ${JSON.stringify(result)}`);
+        Reflect.defineMetadata(infoMetadataKey, meta, result);
         let methods = Object.getOwnPropertyNames(Object.getPrototypeOf(result));
         
         for (let method of methods) {

@@ -1,10 +1,14 @@
-import {initialize, Injector, instance} from "../src/index";
-import "mocha"
-import {expect} from "chai"
+import {initialize, Injector, instance, infoMetadataKey} from "../src/index";
+import "mocha";
+import {expect} from "chai";
+import "reflect-metadata";
 
 @instance() 
 class TestBase {
     public static index = 0;
+    public get meta(): any {
+        return Reflect.getMetadata(infoMetadataKey, this);
+    }
     public constructor() {
         TestBase.index += 1;
     }
@@ -31,7 +35,7 @@ class Test {
 @instance("TestBase", "Test")
 class TestExt extends Test{
     public constructor(testBase: TestBase, test: Test) {
-        super(TestBase);
+        super(testBase);
     }
     public get name() {
         return "TestExt";
@@ -47,6 +51,14 @@ class TestMultiple {
     public get name() {
         return "TestMultiple";
     }
+}
+
+@instance({name: "TestBase", meta: {id: 77}})
+class TestMeta {
+    public constructor(readonly testBase: TestBase) {
+
+    }
+    public get base() { return this.testBase; }
 }
 
 describe("Injector", () => {
@@ -78,5 +90,12 @@ describe("Injector", () => {
         let obj: TestMultiple = await injector.resolve("TestMultiple");
         expect(obj.name).to.equal("TestMultiple");
         expect(obj.length).to.equal(2);
+    });
+    it("Should respect metadata", async () => {
+        let injector = new Injector();
+        injector.register("TestBase", TestBase);
+        injector.register("TestMeta", TestMeta);
+        let obj: TestMeta = await injector.resolve("TestMeta");
+        expect(obj.base.meta.id).to.equal(77);
     });
 })

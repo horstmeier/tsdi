@@ -1,8 +1,9 @@
 {
   "name": "tsdi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dependency Injection for Typescript",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "typings": "declarations/index.d.ts",
   "scripts": {
     "pretest": "tsc --project test",
     "test": "mocha"
